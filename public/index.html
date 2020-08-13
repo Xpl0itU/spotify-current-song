@@ -39,6 +39,7 @@
             <dt>Song Name</dt><dd class="clearfix">{{item.name}}</dd>
             <dt>Album</dt><dd>{{item.album.name}}</dd>
             <dt>Link</dt><dd><a href="{{item.external_urls.spotify}}">{{item.external_urls.spotify}}</a></dd>
+            <dt>Time Left</dt><dd id="time"></dd>
             <dt>Duration</dt><dd id="duration"></dd>
             <dt>Percentage</dt><dd id="percentage"></dd>
           </dl>
@@ -49,73 +50,7 @@
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
-    <script>
-      (function() {
-        /**
-         * Obtains parameters from the hash of the URL
-         * @return Object
-         */
-        function getHashParams() {
-          var hashParams = {};
-          var e, r = /([^&;=]+)=?([^&;]*)/g,
-              q = window.location.hash.substring(1);
-          while ( e = r.exec(q)) {
-             hashParams[e[1]] = decodeURIComponent(e[2]);
-          }
-          return hashParams;
-        }
-
-        var userProfileSource = document.getElementById('user-profile-template').innerHTML,
-            userProfileTemplate = Handlebars.compile(userProfileSource),
-            userProfilePlaceholder = document.getElementById('user-profile');
-
-
-
-        var params = getHashParams();
-
-        var access_token = params.access_token,
-            refresh_token = params.refresh_token,
-            error = params.error;
-
-        if (error) {
-          alert('There was an error during the authentication');
-        } else {
-          if (access_token) {
-
-            $.ajax({
-                url: 'https://api.spotify.com/v1/me/player/currently-playing',
-                headers: {
-                  'Authorization': 'Bearer ' + access_token
-                },
-                success: function(response) {
-                  userProfilePlaceholder.innerHTML = userProfileTemplate(response);
-                  var duration_ms = response.item.duration_ms;
-                  var progress_ms = response.progress_ms;
-                  var med = progress_ms / duration_ms;
-                  var percentage = Math.round(med * 100);
-
-                  document.getElementById('percentage').append(percentage + '%')
-
-                  var minutes = Math.floor(duration_ms / 60000);
-                  var seconds = ((duration_ms % 60000) / 1000).toFixed(0);
-                  var time = minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
-                  document.getElementById('duration').append(time)
-
-                  $('#login').hide();
-                  $('#loggedin').show();
-                }
-                
-            });
-          } else {
-              // render initial screen
-              $('#login').show();
-              $('#loggedin').hide();
-          }
-
-
-        }
-      })();
-    </script>
+    <script src="data.js"></script>
   </body>
 </html>
 
