@@ -4,11 +4,12 @@ var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 var fs = require('fs');
+const { json } = require('express');
 
 
 var client_id = '53d3aa0f077c493b80a332c3bdafbbe0'; // Your client id
 var client_secret = 'c972561cf4ae4eeca85fb95f064c6ab3'; // Your secret
-var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
+var redirect_uri = 'http://localhost:8889/callback'; // Your redirect uri
 
 /**
  * Generates a random string containing numbers and letters
@@ -35,7 +36,7 @@ var stateKey = 'spotify_auth_state';
 
 var app = express();
 
-app.use(express.static(__dirname + '/public'))
+app.use(express.static(__dirname + '/client'))
    .use(cors())
    .use(cookieParser());
 
@@ -45,7 +46,7 @@ app.get('/login', function(req, res) {
   res.cookie(stateKey, state);
 
   // your application requests authorization
-  var scope = 'user-read-private user-read-email user-read-currently-playing user-read-playback-state';
+  var scope = 'user-read-private user-modify-playback-state user-read-currently-playing user-read-playback-state';
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
@@ -91,61 +92,50 @@ app.get('/callback', function(req, res) {
         var access_token = body.access_token,
             refresh_token = body.refresh_token;
 
-        var options = {
-          url: 'https://api.spotify.com/v1/me/player/currently-playing',
-          headers: { 
-            'Authorization': 'Bearer ' + access_token },
-            json: true
+            var jsondata = {
+                url: 'http://localhost:8888/trackdata.json',
+                json: true
+            };
+    
+            request.get(jsondata, function(body, response, error) {
+                console.log(error)
+                var context_uri = error.context_uri
+                var position_ms = error.position_ms
+                var refreshnum = error.refreshnum
+                console.log(context_uri, position_ms, refreshnum)
+                
+                var options = {
+                    url: 'https://api.spotify.com/v1/me/player/play',
+                    headers: { 
+                      'Authorization': 'Bearer ' + access_token },
+                    body: JSON.stringify({
+                      'context_uri': context_uri,
+                      'position_ms': position_ms, })
+                  };
+                  request.put(options, function(error, response, body) {
+                    console.log(body, error);
+          
+                  })
+                  // use the access token to access the Spotify Web API
+          
+                  
+          
+
+            });
+
+
         };
 
-        // use the access token to access the Spotify Web API
-        function getData() {
-        request.get(options, function(error, response, body) {
-          console.log(body);
-          var duration_ms = body.item.duration_ms;
-          var progress_ms = body.progress_ms;
-          var uri = body.item.uri
-          var med = progress_ms / duration_ms;
 
-          var refreshwhen = (duration_ms - progress_ms) + 1000;
-
-          const trackdata = {
-            context_uri: uri,
-            position_ms: progress_ms,
-            refreshnum: refreshwhen,
-        }
-        const jsonString = JSON.stringify(trackdata)
-        fs.writeFile('public/trackdata.json', jsonString, err => {
-            if (err) {
-                console.log('Error writing file', err)
-            } else {
-                console.log('Successfully wrote file')
-            }
-        })
-        })};
-        const jsonString = fs.readFileSync('public/trackdata.json')
-        const trackdata = JSON.parse(jsonString)
-      console.log(trackdata.refreshnum)
-        setInterval(getData, trackdata.refreshnum)
-        getData()
 
 
         // we can also pass the token to the browser to make requests from there
-        res.redirect('/#' +
-          querystring.stringify({
-            access_token: access_token,
-            refresh_token: refresh_token
-          }));
+        
 
-      } else {
-        res.redirect('/#' +
-          querystring.stringify({
-            error: 'invalid_token'
-          }));
-      }
+
     });
   }
 });
 
-console.log('Listening on 8888');
-app.listen(8888);
+console.log('Listening on 8889');
+app.listen(8889);
