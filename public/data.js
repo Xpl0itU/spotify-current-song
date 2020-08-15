@@ -3,6 +3,7 @@
      * Obtains parameters from the hash of the URL
      * @return Object
      */
+    
     function getHashParams() {
       var hashParams = {};
       var e, r = /([^&;=]+)=?([^&;]*)/g,
@@ -28,19 +29,17 @@
               userProfilePlaceholder.innerHTML = userProfileTemplate(response);
               var duration_ms = response.item.duration_ms;
               var progress_ms = response.progress_ms;
+              var uri = response.item.uri
               var med = progress_ms / duration_ms;
               var percentage = Math.round(med * 100);
 
               document.getElementById('percentage').append(percentage + '%')
 
-              var time = millisToMinutesAndSeconds(duration_ms)
-              document.getElementById('duration').append(time)
-
               var refreshwhen = (duration_ms - progress_ms) + 1000
 
-              var timelive = millisToMinutesAndSeconds(refreshwhen - 1000)
-              document.getElementById('time').append(timelive)
-              console.log(refreshwhen, timelive)
+              setTimeout(function() {
+                document.location.reload()
+          }, refreshwhen);
 
               $('#login').hide();
               $('#loggedin').show();
@@ -65,7 +64,6 @@
     } else {
       if (access_token) {
         getData()
-        setInterval(getData, 1000);
       } else {
           // render initial screen
           $('#login').show();

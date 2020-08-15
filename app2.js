@@ -3,6 +3,8 @@ var request = require('request'); // "Request" library
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
+var fs = require('fs');
+
 
 var client_id = '53d3aa0f077c493b80a332c3bdafbbe0'; // Your client id
 var client_secret = 'c972561cf4ae4eeca85fb95f064c6ab3'; // Your secret
@@ -97,16 +99,44 @@ app.get('/callback', function(req, res) {
         };
 
         // use the access token to access the Spotify Web API
+        function getData() {
         request.get(options, function(error, response, body) {
           console.log(body);
-        });
-        
+          var duration_ms = body.item.duration_ms;
+          var progress_ms = body.progress_ms;
+          var uri = body.item.uri
+          var med = progress_ms / duration_ms;
+
+          var refreshwhen = (duration_ms - progress_ms) + 1000;
+
+          const trackdata = {
+            urilink: uri,
+            refreshnum: refreshwhen,
+            progress: progress_ms,
+        }
+        const jsonString = JSON.stringify(trackdata)
+        fs.writeFile('public/trackdata.json', jsonString, err => {
+            if (err) {
+                console.log('Error writing file', err)
+            } else {
+                console.log('Successfully wrote file')
+            }
+        })
+        })};
+        const jsonString = fs.readFileSync('public/trackdata.json')
+        const trackdata = JSON.parse(jsonString)
+      console.log(trackdata.refreshnum)
+        setInterval(getData, trackdata.refreshnum)
+        getData()
+
+
         // we can also pass the token to the browser to make requests from there
         res.redirect('/#' +
           querystring.stringify({
             access_token: access_token,
             refresh_token: refresh_token
           }));
+
       } else {
         res.redirect('/#' +
           querystring.stringify({
